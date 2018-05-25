@@ -60,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
     private class MyPhoneStateListener extends PhoneStateListener {
         private final Location location;
         private final int networkType;
+        private Location previousLocation;
         protected SignalStrength signalStrength;
 
         public MyPhoneStateListener(Location location, int networkType){
@@ -73,13 +74,17 @@ public class MainActivity extends AppCompatActivity {
             this.signalStrength = signalStrength;
             Log.i(TAG,"Signal quality: " + signalStrength.getLevel() + " at location " + location.toString());
             try {
-                File storageFile = getStorageFile();
-                FileOutputStream fileOutputStream = new FileOutputStream(storageFile,true);
-                PrintStream printStream = new PrintStream(fileOutputStream);
-                printStream.print(location.getLongitude()+";"+location.getLatitude()+";"+location.getAltitude()+";"+location.getTime()+";"+signalStrength.getLevel() + ";" +NetworkType.fromInt(networkType).name() +"\n");
-                fileOutputStream.close();
+                if(location.getAltitude()!= previousLocation.getAltitude() || location.getLongitude() != previousLocation.getLongitude() || location.getLatitude() != previousLocation.getLatitude()) {
+                    File storageFile = getStorageFile();
+                    FileOutputStream fileOutputStream = new FileOutputStream(storageFile, true);
+                    PrintStream printStream = new PrintStream(fileOutputStream);
+                    printStream.print(location.getLongitude() + ";" + location.getLatitude() + ";" + location.getAltitude() + ";" + location.getTime() + ";" + signalStrength.getLevel() + ";" + NetworkType.fromInt(networkType).name() + "\n");
+                    fileOutputStream.close();
+                }
             } catch (IOException e) {
                 Log.e(TAG, e.getMessage());
+            }finally {
+                previousLocation = location;
             }
 
         }
