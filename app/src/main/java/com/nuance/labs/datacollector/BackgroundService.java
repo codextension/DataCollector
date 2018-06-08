@@ -4,8 +4,10 @@ import android.Manifest;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.Context;
+import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationManager;
@@ -25,6 +27,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -36,9 +41,13 @@ import java.util.List;
  */
 public class BackgroundService extends IntentService {
     private static final String TAG = "BackgroundService";
-    private LocationManager mLocationManager = null;
+    private static LocationManager mLocationManager = null;
     private static final int LOCATION_INTERVAL = 0;//1000;
     private static final float LOCATION_DISTANCE = 0;//50f;
+    public static boolean STOP=false;
+    private static Handler mHandler;
+    private static Runnable runner;
+
 
     private class MyPhoneStateListener extends PhoneStateListener {
         private final Location location;
@@ -54,7 +63,7 @@ public class BackgroundService extends IntentService {
         public void onSignalStrengthsChanged(SignalStrength signalStrength) {
             super.onSignalStrengthsChanged(signalStrength);
             this.signalStrength = signalStrength;
-            Log.i(TAG,"Signal quality: " + signalStrength.getLevel() + " at location " + location.toString());
+            Log.i(TAG,NetworkType.fromInt(networkType).name() + " - Signal quality: " + signalStrength.getLevel() + " at location " + location.toString());
             try {
                 File storageFile = getStorageFile();
                 FileOutputStream fileOutputStream = new FileOutputStream(storageFile,true);
@@ -70,8 +79,12 @@ public class BackgroundService extends IntentService {
 
     public File getStorageFile() throws IOException {
         // Get the directory for the user's public pictures directory.
+        DateFormat dateFormat = new SimpleDateFormat("yyyy_mm_dd");
+
+        //to convert Date to String, use format method of SimpleDateFormat class.
+        String strDate = dateFormat.format(new Date());
         File file = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DCIM), "data.cvs");
+                Environment.DIRECTORY_DCIM), strDate + ".cvs");
         if (!file.exists()) {
             file.createNewFile();
             FileOutputStream fileOutputStream = new FileOutputStream(file,true);
@@ -91,16 +104,14 @@ public class BackgroundService extends IntentService {
         Location mLastLocation;
 
         public LocationListener(String provider) {
-            Log.e(TAG, "LocationListener " + provider);
+            Log.i(TAG, "LocationListener " + provider);
             mLastLocation = new Location(provider);
         }
 
         @Override
         public void onLocationChanged(Location location) {
-            Log.e(TAG, "onLocationChanged: " + location);
             mLastLocation.set(location);
             TelephonyManager mTelephonyManager= (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            Log.i(TAG,NetworkType.fromInt(mTelephonyManager.getNetworkType()).name());
             MyPhoneStateListener phoneStateListener = new MyPhoneStateListener(location,mTelephonyManager.getNetworkType());
             mTelephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
             mTelephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE);
@@ -108,22 +119,22 @@ public class BackgroundService extends IntentService {
 
         @Override
         public void onProviderDisabled(String provider) {
-            Log.e(TAG, "onProviderDisabled: " + provider);
+            Log.i(TAG, "onProviderDisabled: " + provider);
         }
 
         @Override
         public void onProviderEnabled(String provider) {
-            Log.e(TAG, "onProviderEnabled: " + provider);
+            Log.i(TAG, "onProviderEnabled: " + provider);
         }
 
         @Override
         public void onStatusChanged(String provider, int status, Bundle extras) {
-            Log.e(TAG, "onStatusChanged: " + provider);
+            Log.i(TAG, "onStatusChanged: " + provider);
         }
     }
 
 
-    LocationListener[] mLocationListeners = new LocationListener[]{
+    private LocationListener[] mLocationListeners = new LocationListener[]{
             new LocationListener(LocationManager.GPS_PROVIDER),
             new LocationListener(LocationManager.NETWORK_PROVIDER),
             new LocationListener(LocationManager.PASSIVE_PROVIDER)
@@ -138,8 +149,19 @@ public class BackgroundService extends IntentService {
     protected void onHandleIntent(@Nullable Intent intent) {
         Log.i(TAG,"Starting background collector");
 
-        Handler mHandler = new Handler(getMainLooper());
-        mHandler.post(new Runnable() {
+        if (mHandler==null){
+            mHandler = new Handler(getMainLooper());
+        }
+
+        if(STOP){
+            mLocationManager.removeUpdates(mLocationListeners[0]);
+            mLocationManager=null;
+            mHandler.removeCallbacks(runner);
+            mHandler=null;
+            return;
+        }
+
+        runner = new Runnable() {
             @Override
             public void run() {
                 initializeLocationManager();
@@ -151,16 +173,18 @@ public class BackgroundService extends IntentService {
                             mLocationListeners[0]
                     );
                 } catch (java.lang.SecurityException ex) {
-                    Log.i(TAG, "fail to request location update, ignore", ex);
+                    Log.e(TAG, "fail to request location update, ignore", ex);
                 } catch (IllegalArgumentException ex) {
-                    Log.d(TAG, "network provider does not exist, " + ex.getMessage());
+                    Log.e(TAG, "network provider does not exist, " + ex.getMessage());
                 }
             }
-        });
+        };
+
+        mHandler.post(runner);
     }
 
     private void initializeLocationManager() {
-        Log.e(TAG, "initializeLocationManager - LOCATION_INTERVAL: "+ LOCATION_INTERVAL + " LOCATION_DISTANCE: " + LOCATION_DISTANCE);
+        Log.i(TAG, "initializeLocationManager - LOCATION_INTERVAL: "+ LOCATION_INTERVAL + " LOCATION_DISTANCE: " + LOCATION_DISTANCE);
         if (mLocationManager == null) {
             mLocationManager = (LocationManager) getApplicationContext().getSystemService(Context.LOCATION_SERVICE);
         }
