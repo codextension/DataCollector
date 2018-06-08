@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.AlarmManager;
 import android.app.IntentService;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Intent;
 import android.content.Context;
@@ -39,14 +40,12 @@ import java.util.List;
  * TODO: Customize class - update intent actions, extra parameters and static
  * helper methods.
  */
-public class BackgroundService extends IntentService {
+public class BackgroundService extends Service {
     private static final String TAG = "BackgroundService";
-    private static LocationManager mLocationManager = null;
+    public boolean STOP = false;
     private static final int LOCATION_INTERVAL = 0;//1000;
     private static final float LOCATION_DISTANCE = 0;//50f;
-    public static boolean STOP=false;
-    private static Handler mHandler;
-    private static Runnable runner;
+    private LocationManager mLocationManager = null;
 
 
     private class MyPhoneStateListener extends PhoneStateListener {
@@ -97,7 +96,7 @@ public class BackgroundService extends IntentService {
     }
 
     public BackgroundService() {
-        super("BackgroundDataCollector");
+        super();
     }
 
     private class LocationListener implements android.location.LocationListener {
@@ -146,41 +145,28 @@ public class BackgroundService extends IntentService {
     }
 
     @Override
-    protected void onHandleIntent(@Nullable Intent intent) {
-        Log.i(TAG,"Starting background collector");
-
-        if (mHandler==null){
-            mHandler = new Handler(getMainLooper());
+    public int onStartCommand(Intent intent, int flags, int startId) {
+        initializeLocationManager();
+        try {
+            mLocationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    LOCATION_INTERVAL,
+                    LOCATION_DISTANCE,
+                    mLocationListeners[0]
+            );
+        } catch (java.lang.SecurityException ex) {
+            Log.e(TAG, "fail to request location update, ignore", ex);
+        } catch (IllegalArgumentException ex) {
+            Log.e(TAG, "network provider does not exist, " + ex.getMessage());
         }
 
-        if(STOP){
-            mLocationManager.removeUpdates(mLocationListeners[0]);
-            mLocationManager=null;
-            mHandler.removeCallbacks(runner);
-            mHandler=null;
-            return;
-        }
+        return Service.START_NOT_STICKY;
+    }
 
-        runner = new Runnable() {
-            @Override
-            public void run() {
-                initializeLocationManager();
-                try {
-                    mLocationManager.requestLocationUpdates(
-                            LocationManager.GPS_PROVIDER,
-                            LOCATION_INTERVAL,
-                            LOCATION_DISTANCE,
-                            mLocationListeners[0]
-                    );
-                } catch (java.lang.SecurityException ex) {
-                    Log.e(TAG, "fail to request location update, ignore", ex);
-                } catch (IllegalArgumentException ex) {
-                    Log.e(TAG, "network provider does not exist, " + ex.getMessage());
-                }
-            }
-        };
-
-        mHandler.post(runner);
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mLocationManager.removeUpdates(mLocationListeners[0]);
     }
 
     private void initializeLocationManager() {

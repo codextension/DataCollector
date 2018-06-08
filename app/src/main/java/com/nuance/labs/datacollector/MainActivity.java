@@ -1,5 +1,6 @@
 package com.nuance.labs.datacollector;
 
+import android.content.ComponentName;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int RSS_JOB_ID = 1000;
     private Switch switchBtn;
     private Intent serviceIntent;
+    private ComponentName cName;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -23,11 +25,9 @@ public class MainActivity extends AppCompatActivity {
 
     public void onToggle(View view) {
         if(switchBtn.isChecked()){
-            BackgroundService.STOP=false;
-            startService(serviceIntent);
+            cName = startService(serviceIntent);
         }else{
-            BackgroundService.STOP=true;
-            startService(serviceIntent);
+            stopService(serviceIntent);
         }
     }
 }
