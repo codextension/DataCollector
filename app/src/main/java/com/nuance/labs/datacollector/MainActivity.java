@@ -9,7 +9,6 @@ import android.widget.Switch;
 
 
 public class MainActivity extends AppCompatActivity {
-    private static final int RSS_JOB_ID = 1000;
     private Switch switchBtn;
     private Intent serviceIntent;
     private ComponentName cName;

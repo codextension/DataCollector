@@ -42,7 +42,6 @@ import java.util.List;
  */
 public class BackgroundService extends Service {
     private static final String TAG = "BackgroundService";
-    public boolean STOP = false;
     private static final int LOCATION_INTERVAL = 0;//1000;
     private static final float LOCATION_DISTANCE = 0;//50f;
     private LocationManager mLocationManager = null;
@@ -93,10 +92,6 @@ public class BackgroundService extends Service {
 
         }
         return file;
-    }
-
-    public BackgroundService() {
-        super();
     }
 
     private class LocationListener implements android.location.LocationListener {
