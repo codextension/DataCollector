@@ -42,8 +42,8 @@ import java.util.List;
  */
 public class BackgroundService extends Service {
     private static final String TAG = "BackgroundService";
-    private static final int LOCATION_INTERVAL = 0;//1000;
-    private static final float LOCATION_DISTANCE = 0;//50f;
+    private static final int LOCATION_INTERVAL = 1000;//1000;
+    private static final float LOCATION_DISTANCE = 50f;//50f;
     private LocationManager mLocationManager = null;
 
 
