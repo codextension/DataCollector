@@ -55,7 +55,7 @@ public class BackgroundService extends Service {
         //to convert Date to String, use format method of SimpleDateFormat class.
         String strDate = dateFormat.format(new Date());
         File file = new File(Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_DOWNLOADS), strDate + ".cvs");
+                Environment.DIRECTORY_DOWNLOADS), strDate + ".csv");
         if (!file.exists()) {
             file.createNewFile();
             FileOutputStream fileOutputStream = new FileOutputStream(file,true);
@@ -145,7 +145,7 @@ public class BackgroundService extends Service {
                     File storageFile = getStorageFile();
                     FileOutputStream fileOutputStream = new FileOutputStream(storageFile, true);
                     PrintStream printStream = new PrintStream(fileOutputStream);
-                    printStream.print(location.getLongitude() + ";" + location.getLatitude() + ";" + location.getAltitude() + ";" + location.getTime() + ";" + phoneStateListener.getSignalStrength().getLevel() + ";" + NetworkType.fromInt(mTelephonyManager.getNetworkType()).name() + "\n");
+                    printStream.print(+location.getTime() + "\t" + location.getLongitude() + "\t" + location.getLatitude() + "\t" + location.getAltitude() + "\t" + phoneStateListener.getSignalStrength().getLevel() + "\t" + NetworkType.fromInt(mTelephonyManager.getNetworkType()).name() + "\n");
                     fileOutputStream.close();
                 } catch (IOException e) {
                     Log.e(TAG, e.getMessage());
