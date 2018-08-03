@@ -19,6 +19,7 @@ import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.telephony.PhoneStateListener;
+import android.telephony.ServiceState;
 import android.telephony.SignalStrength;
 import android.telephony.TelephonyManager;
 import android.util.Log;
@@ -115,9 +116,25 @@ public class BackgroundService extends Service {
 
     private class MyPhoneStateListener extends PhoneStateListener {
         private SignalStrength signalStrength;
+        private int networkType;
+        private int state;
+
+        public int getState() {
+            return state;
+        }
+
+        public int getNetworkType() {
+            return networkType;
+        }
 
         public SignalStrength getSignalStrength() {
             return signalStrength;
+        }
+
+        @Override
+        public void onDataConnectionStateChanged(int state, int networkType) {
+            this.state = state;
+            this.networkType = networkType;
         }
 
         @Override
@@ -145,7 +162,7 @@ public class BackgroundService extends Service {
                     File storageFile = getStorageFile();
                     FileOutputStream fileOutputStream = new FileOutputStream(storageFile, true);
                     PrintStream printStream = new PrintStream(fileOutputStream);
-                    printStream.print(+location.getTime() + "\t" + location.getLongitude() + "\t" + location.getLatitude() + "\t" + location.getAltitude() + "\t" + phoneStateListener.getSignalStrength().getLevel() + "\t" + NetworkType.fromInt(mTelephonyManager.getNetworkType()).name() + "\n");
+                    printStream.print(+location.getTime() + "\t" + location.getLongitude() + "\t" + location.getLatitude() + "\t" + location.getAltitude() + "\t" + phoneStateListener.getSignalStrength().getLevel() + "\t" + NetworkType.fromInt(phoneStateListener.getNetworkType()).name() + "\n");
                     fileOutputStream.close();
                 } catch (IOException e) {
                     Log.e(TAG, e.getMessage());
