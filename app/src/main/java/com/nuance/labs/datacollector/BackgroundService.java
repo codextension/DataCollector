@@ -81,7 +81,7 @@ public class BackgroundService extends Service {
 
             phoneStateListener = new MyPhoneStateListener();
             mTelephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-            mTelephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS);
+            mTelephonyManager.listen(phoneStateListener, PhoneStateListener.LISTEN_SIGNAL_STRENGTHS | PhoneStateListener.LISTEN_DATA_CONNECTION_STATE);
         } catch (java.lang.SecurityException ex) {
             Log.e(TAG, "fail to request location update, ignore", ex);
         } catch (IllegalArgumentException ex) {
